@@ -62,9 +62,9 @@ func (m *KeygenModule) Add(keyFilePath, derivationPath string) error {
 	return nil
 }
 
-// Grind for a new key file with vanity address defined by predicate using derivationPath,
-// then save it keyFilePath.
-func (m *KeygenModule) Grind(outputPath, derivationPath string, randomness, keyCount uint16, predicate *stringxt.Predicate) error {
+// Generate a number of random key files and save them to outputPath.
+// If predicate is provided, the function will try to grind for vanity address instead.
+func (m *KeygenModule) New(outputPath, derivationPath string, randomness, keyCount uint16, predicate *stringxt.Predicate) error {
 	keyCounter := uint16(0)
 	retryCounter := uint64(0)
 
@@ -116,41 +116,6 @@ func (m *KeygenModule) Grind(outputPath, derivationPath string, randomness, keyC
 		Uint16("keyCount", keyCounter).
 		Uint64("retryCount", retryCounter).
 		Msgf("Finished finding key.")
-	return nil
-}
-
-// Create a new key file with random mnemonic and derive first account using
-// specified derivationPath, then save it keyFilePath.
-func (m *KeygenModule) New(outputPath, derivationPath string, randomness uint16) error {
-
-	if randomness < 128 || randomness > 256 || randomness%32 != 0 {
-		return errors.New("invalid entropy, valid values are 128, 160, 192, 224, 256")
-	}
-	mnemonic, entropy, err := keymngr.NewMnemonic2(int(randomness))
-	if err != nil {
-		return err
-	}
-	multiAcc := &storage.HDAccounts{
-		Mnemonic:         mnemonic,
-		Entropy:          entropy,
-		EthereumAccounts: make(map[string]*storage.HDAccount),
-	}
-
-	hdAccount, err := m.updateHDAccount(multiAcc, derivationPath)
-	if err != nil {
-		return err
-	}
-
-	keyFilePath := storage.FilePath(outputPath, hdAccount.AddressStr+".json")
-	err = m.writeHDAccounts(multiAcc, keyFilePath)
-	if err != nil {
-		return err
-	}
-
-	m.Logger.Info().
-		Str("address", hdAccount.AddressStr).
-		Str("keyFile", keyFilePath).
-		Msg("New key file has ben created.")
 	return nil
 }
 
@@ -242,39 +207,26 @@ func KeygenCmd() *cobra.Command {
 	addCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
 	rootCmd.AddCommand(addCmd)
 
-	grindCmd := &cobra.Command{
-		Use:  "grind <output path>",
-		Args: cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			flags := ParseKeygenFlags(cmd)
-			m := NewKeygenModule(log.Logger, "grind")
-			predicate := &stringxt.Predicate{
-				Prefix: flags.AccountPrefix,
-				Suffix: flags.AccountSuffix,
-				Regexp: flags.AccountRegexp,
-			}
-			m.logError(m.Grind(args[0], flags.DerivationPath, flags.Entropy, flags.KeyCount, predicate))
-		},
-	}
-	grindCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
-	grindCmd.Flags().Uint16P("count", "n", 1, "Number of accounts to search for.")
-	grindCmd.Flags().Uint16P("entropy", "e", 256, "Entropy size for generating mnemonic. Valid values are 128, 160, 192, 224, 256.")
-	grindCmd.Flags().String("prefix", "", "Prefix of the output address. Case sensitive.")
-	grindCmd.Flags().String("suffix", "", "Suffix of the output address. Case sensitive.")
-	grindCmd.Flags().String("regexp", "", "Regular expression to match the output address. Prefix and suffix flags will be ignored.")
-	rootCmd.AddCommand(grindCmd)
-
 	newCmd := &cobra.Command{
 		Use:  "new <output path>",
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			flags := ParseKeygenFlags(cmd)
 			m := NewKeygenModule(log.Logger, "new")
-			m.logError(m.New(args[0], flags.DerivationPath, flags.Entropy))
+			predicate := &stringxt.Predicate{
+				Prefix: flags.AccountPrefix,
+				Suffix: flags.AccountSuffix,
+				Regexp: flags.AccountRegexp,
+			}
+			m.logError(m.New(args[0], flags.DerivationPath, flags.Entropy, flags.KeyCount, predicate))
 		},
 	}
 	newCmd.Flags().StringP("ckd", "p", "", "Child key perivation path. Must start with 'm'.")
+	newCmd.Flags().Uint16P("count", "n", 1, "Number of accounts to search for.")
 	newCmd.Flags().Uint16P("entropy", "e", 256, "Entropy size for generating mnemonic. Valid values are 128, 160, 192, 224, 256.")
+	newCmd.Flags().String("prefix", "", "Prefix of the output address. Case sensitive.")
+	newCmd.Flags().String("suffix", "", "Suffix of the output address. Case sensitive.")
+	newCmd.Flags().String("regexp", "", "Regular expression to match the output address. Prefix and suffix flags will be ignored.")
 	rootCmd.AddCommand(newCmd)
 
 	refreshCmd := &cobra.Command{
