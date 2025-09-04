@@ -23,6 +23,13 @@ Published by Factom (https://github.com/FactomProject),
 originally developed by Michael Hendricks (https://github.com/mndrix).
 
 
+cobra
+------
+This software uses code from cobra library (https://github.com/spf13/cobra).
+Licensed under Apache-2.0 license (https://github.com/spf13/cobra/blob/main/LICENSE.txt).
+Copyright (C) 2013-2023 The Cobra Authors.
+
+
 crypto
 -------
 This software uses code from x/crypto library (https://cs.opensource.google/go/x/crypto).
@@ -33,5 +40,12 @@ Copyright (C) 2009 The Go Authors.
 tf-golib
 -------
 This software uses code from tf-golib library (https://github.com/tforce-io/tf-golib).
-Licensed under Apache-2.0 license. (https://github.com/tforce-io/tf-golib/blob/master/LICENSE).
+Licensed under Apache-2.0 license (https://github.com/tforce-io/tf-golib/blob/master/LICENSE).
 Copyright (C) 2025 T-Force I/O.
+
+
+zerolog
+-------
+This software uses code from zerolog library (https://github.com/rs/zerolog).
+Licensed under MIT license (https://github.com/rs/zerolog/blob/master/LICENSE).
+Copyright (C) 2017 Olivier Poitrey.
